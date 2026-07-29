@@ -3,124 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Battle Arcade - GitHub Game</title>
+    <title>Cyber Catcher - Game Mudah GitHub</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none;
-        }
-
-        body {
-            background-color: #0b0c10;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        #game-container {
-            position: relative;
-            box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px solid #00ffcc;
-        }
-
-        canvas {
-            display: block;
-            background: #000;
-        }
-
-        /* Overlay & Menu */
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(11, 12, 16, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-            z-index: 10;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            color: #00ffcc;
-            text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
-            margin-bottom: 10px;
-        }
-
-        p {
-            font-size: 1.1rem;
-            color: #c5c6c7;
-            margin-bottom: 20px;
-            text-align: center;
-            max-width: 80%;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        button {
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #0b0c10;
-            background: #00ffcc;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
-        }
-
-        button:hover {
-            background: #fff;
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
-        }
-
-        .hidden {
-            display: none !important;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
+        body { background: #0f172a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        #game-container { position: relative; border: 3px solid #38bdf8; border-radius: 10px; overflow: hidden; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+        canvas { display: block; background: #1e293b; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 10px; }
+        p { margin-bottom: 20px; color: #94a3b8; }
+        button { padding: 10px 20px; font-size: 1rem; font-weight: bold; background: #38bdf8; border: none; border-radius: 20px; cursor: pointer; margin: 5px; color: #0f172a; }
+        button:hover { background: #fff; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <!-- Canvas Game -->
-        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
 
         <!-- Menu Utama -->
         <div id="main-menu" class="overlay">
-            <h1>CYBER BATTLE 2D</h1>
-            <p>Pilih Mode Permainan untuk Memulai</p>
-            <div class="btn-group">
-                <button onclick="startGame('vs_ai')">1 Player (vs Computer)</button>
+            <h1>CYBER CATCHER</h1>
+            <p>Tangkap Bintang Sebanyak-Banyaknya!</p>
+            <div>
+                <button onclick="startGame('vs_ai')">1 Player (vs Komputer)</button>
                 <button onclick="startGame('pvp')">2 Players (Berdua)</button>
             </div>
         </div>
 
-        <!-- Menu Game Over / Win -->
-        <div id="game-over-menu" class="overlay hidden">
+        <!-- Menu Selesai -->
+        <div id="over-menu" class="overlay hidden">
             <h1 id="over-title">LEVEL SELESAI</h1>
-            <p id="over-msg">Pemenang Level Ini!</p>
-            <div class="btn-group">
-                <button id="btn-next" onclick="nextLevel()">Level Berikutnya</button>
-                <button onclick="restartGame()">Ulangi Game</button>
+            <p id="over-msg"></p>
+            <div>
+                <button id="btn-next" onclick="nextLevel()">Level Selanjutnya</button>
+                <button onclick="restartGame()">Main Lagi</button>
             </div>
         </div>
     </div>
@@ -129,100 +47,51 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Web Audio Synthesizer (Notifikasi Suara tanpa file)
+        // Web Audio untuk Efek Suara
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-
             let now = audioCtx.currentTime;
 
-            if (type === 'hit') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
-                gain.gain.setValueAtTime(0.3, now);
+            if (type === 'catch') {
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now);
-                osc.stop(now + 0.1);
-            } else if (type === 'score') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
+                osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'win') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(880, now + 0.2);
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.setValueAtTime(1000, now + 0.2);
                 gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now);
-                osc.stop(now + 0.5);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
             }
         }
 
-        // Variable Game State
-        let gameMode = 'vs_ai'; // 'vs_ai' atau 'pvp'
+        // Variable Game
+        let gameMode = 'vs_ai';
         let currentLevel = 1;
-        let timeLeft = 60;
-        let timerInterval = null;
-        let isGameRunning = false;
+        let timeLeft = 30;
+        let timerInterval;
+        let isRunning = false;
 
-        // Visual Partikel
-        let particles = [];
+        let p1 = { x: 150, y: 360, w: 70, h: 15, score: 0, color: '#38bdf8', speed: 8 };
+        let p2 = { x: 380, y: 360, w: 70, h: 15, score: 0, color: '#f43f5e', speed: 8 };
 
-        // Player & AI Config
-        const paddleWidth = 12;
-        const paddleHeight = 90;
+        let item = { x: 300, y: 0, size: 12, speedY: 3, color: '#facc15' };
 
-        let p1 = { x: 20, y: 205, score: 0, speed: 7, dy: 0 };
-        let p2 = { x: 768, y: 205, score: 0, speed: 7, dy: 0 };
-
-        let ball = {
-            x: 400,
-            y: 250,
-            radius: 8,
-            speedX: 5,
-            speedY: 5,
-            baseSpeed: 5
-        };
-
-        // Key Listener
         const keys = {};
         window.addEventListener('keydown', e => keys[e.key] = true);
         window.addEventListener('keyup', e => keys[e.key] = false);
 
-        // Grid Background Variables
-        let gridOffset = 0;
-
-        function resetBall(winner) {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            let dir = winner === 1 ? -1 : 1;
-            let currentSpeed = ball.baseSpeed + (currentLevel - 1) * 1.5;
-            ball.speedX = dir * currentSpeed;
-            ball.speedY = (Math.random() > 0.5 ? 1 : -1) * (currentSpeed * 0.8);
-        }
-
-        function createParticles(x, y, color) {
-            for (let i = 0; i < 10; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.5) * 6,
-                    life: 20,
-                    color: color
-                });
-            }
+        function resetItem() {
+            item.x = Math.random() * (canvas.width - 20) + 10;
+            item.y = -10;
+            item.speedY = 3 + (currentLevel * 1.2);
         }
 
         function startGame(mode) {
@@ -231,25 +100,22 @@
             p1.score = 0;
             p2.score = 0;
             document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('game-over-menu').classList.add('hidden');
+            document.getElementById('over-menu').classList.add('hidden');
             initLevel();
         }
 
         function initLevel() {
-            timeLeft = 60;
-            ball.baseSpeed = 5 + (currentLevel - 1) * 1.2;
-            resetBall(1);
-            p1.y = canvas.height / 2 - paddleHeight / 2;
-            p2.y = canvas.height / 2 - paddleHeight / 2;
-            isGameRunning = true;
+            timeLeft = 30;
+            p1.x = 150;
+            p2.x = 380;
+            resetItem();
+            isRunning = true;
 
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                if (isGameRunning) {
+                if (isRunning) {
                     timeLeft--;
-                    if (timeLeft <= 0) {
-                        endLevel();
-                    }
+                    if (timeLeft <= 0) endLevel();
                 }
             }, 1000);
 
@@ -257,174 +123,82 @@
         }
 
         function update() {
-            if (!isGameRunning) return;
+            if (!isRunning) return;
 
-            // Kontrol Player 1 (W / S)
-            if (keys['w'] || keys['W']) p1.y -= p1.speed;
-            if (keys['s'] || keys['S']) p1.y += p1.speed;
+            // Kontrol P1 (A / D)
+            if (keys['a'] || keys['A']) p1.x -= p1.speed;
+            if (keys['d'] || keys['D']) p1.x += p1.speed;
+            p1.x = Math.max(0, Math.min(canvas.width - p1.w, p1.x));
 
-            // Batasi Raket P1
-            p1.y = Math.max(0, Math.min(canvas.height - paddleHeight, p1.y));
-
-            // Kontrol Player 2 atau AI
+            // Kontrol P2 atau AI
             if (gameMode === 'pvp') {
-                if (keys['ArrowUp']) p2.y -= p2.speed;
-                if (keys['ArrowDown']) p2.y += p2.speed;
+                if (keys['ArrowLeft']) p2.x -= p2.speed;
+                if (keys['ArrowRight']) p2.x += p2.speed;
             } else {
-                // AI Logic (Tingkat kesulitan naik mengikuti level)
-                let aiSpeed = 3.5 + (currentLevel * 0.8);
-                let targetY = ball.y - paddleHeight / 2;
-                if (p2.y < targetY) p2.y += Math.min(aiSpeed, targetY - p2.y);
-                else if (p2.y > targetY) p2.y -= Math.min(aiSpeed, p2.y - targetY);
+                // Pergerakan AI Komputer yang sederhana
+                let aiTarget = item.x - p2.w / 2;
+                let aiSpeed = 3 + currentLevel;
+                if (p2.x < aiTarget) p2.x += Math.min(aiSpeed, aiTarget - p2.x);
+                else if (p2.x > aiTarget) p2.x -= Math.min(aiSpeed, p2.x - aiTarget);
             }
+            p2.x = Math.max(0, Math.min(canvas.width - p2.w, p2.x));
 
-            // Batasi Raket P2
-            p2.y = Math.max(0, Math.min(canvas.height - paddleHeight, p2.y));
+            // Pergerakan Bintang Jatuh
+            item.y += item.speedY;
 
-            // Gerakan Bola
-            ball.x += ball.speedX;
-            ball.y += ball.speedY;
-
-            // Pantulan Atas & Bawah
-            if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= canvas.height) {
-                ball.speedY *= -1;
-                playSound('hit');
-            }
-
-            // Tabrakan Raket Player 1
-            if (ball.x - ball.radius <= p1.x + paddleWidth &&
-                ball.y >= p1.y && ball.y <= p1.y + paddleHeight) {
-                ball.speedX = Math.abs(ball.speedX) * 1.05; // Sedikit akselerasi
-                ball.x = p1.x + paddleWidth + ball.radius;
-                playSound('hit');
-                createParticles(ball.x, ball.y, '#00ffcc');
-            }
-
-            // Tabrakan Raket Player 2
-            if (ball.x + ball.radius >= p2.x &&
-                ball.y >= p2.y && ball.y <= p2.y + paddleHeight) {
-                ball.speedX = -Math.abs(ball.speedX) * 1.05;
-                ball.x = p2.x - ball.radius;
-                playSound('hit');
-                createParticles(ball.x, ball.y, '#ff0055');
-            }
-
-            // Skor Player 2
-            if (ball.x < 0) {
-                p2.score++;
-                playSound('score');
-                resetBall(2);
-            }
-
-            // Skor Player 1
-            if (ball.x > canvas.width) {
+            // Cek jika P1 menangkap bintang
+            if (item.y + item.size >= p1.y && item.x >= p1.x && item.x <= p1.x + p1.w) {
                 p1.score++;
-                playSound('score');
-                resetBall(1);
+                playSound('catch');
+                resetItem();
             }
 
-            // Update Partikel
-            for (let i = particles.length - 1; i >= 0; i--) {
-                p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                if (p.life <= 0) particles.splice(i, 1);
+            // Cek jika P2 menangkap bintang
+            if (item.y + item.size >= p2.y && item.x >= p2.x && item.x <= p2.x + p2.w) {
+                p2.score++;
+                playSound('catch');
+                resetItem();
             }
 
-            // Animasi Grid Background
-            gridOffset = (gridOffset + 1) % 40;
-        }
-
-        function drawBackground() {
-            // Latar Belakang Gradient Cyber
-            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, '#050515');
-            grad.addColorStop(1, '#150525');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Garis Grid Teranimasi
-            ctx.strokeStyle = 'rgba(0, 255, 204, 0.08)';
-            ctx.lineWidth = 1;
-
-            for (let x = 0; x < canvas.width; x += 40) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
+            // Jika bintang menyentuh tanah (luput)
+            if (item.y > canvas.height) {
+                resetItem();
             }
-
-            for (let y = gridOffset; y < canvas.height; y += 40) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-
-            // Garis Tengah
-            ctx.setLineDash([10, 10]);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
-            ctx.stroke();
-            ctx.setLineDash([]);
         }
 
         function draw() {
-            drawBackground();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Gambar Raket P1
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#00ffcc';
-            ctx.fillStyle = '#00ffcc';
-            ctx.fillRect(p1.x, p1.y, paddleWidth, paddleHeight);
+            // Gambar Karakter Player 1 & 2
+            ctx.fillStyle = p1.color;
+            ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
 
-            // Gambar Raket P2
-            ctx.shadowColor = '#ff0055';
-            ctx.fillStyle = '#ff0055';
-            ctx.fillRect(p2.x, p2.y, paddleWidth, paddleHeight);
+            ctx.fillStyle = p2.color;
+            ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
 
-            // Gambar Bola
-            ctx.shadowColor = '#ffff00';
-            ctx.fillStyle = '#ffff00';
+            // Gambar Bintang Jatuh
+            ctx.fillStyle = item.color;
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.arc(item.x, item.y, item.size, 0, Math.PI * 2);
             ctx.fill();
 
-            // Reset Shadow
-            ctx.shadowBlur = 0;
+            // Tampilan Poin & Waktu
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = p1.color;
+            ctx.fillText(`P1: ${p1.score}`, 20, 30);
 
-            // Gambar Partikel
-            particles.forEach(p => {
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.life / 20;
-                ctx.fillRect(p.x, p.y, 4, 4);
-            });
-            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = p2.color;
+            let p2Name = gameMode === 'vs_ai' ? 'BOT' : 'P2';
+            ctx.fillText(`${p2Name}: ${p2.score}`, canvas.width - 80, 30);
 
-            // HUD (Skor, Waktu, Level)
-            ctx.font = 'bold 20px Segoe UI';
-            ctx.fillStyle = '#00ffcc';
-            ctx.fillText(`P1: ${p1.score}`, 150, 40);
-
-            ctx.fillStyle = '#ff0055';
-            let p2Label = gameMode === 'vs_ai' ? 'BOT' : 'P2';
-            ctx.fillText(`${p2Label}: ${p2.score}`, 600, 40);
-
-            // Waktu & Level Tengah
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText(`LEVEL ${currentLevel}`, canvas.width / 2, 30);
-            ctx.font = '16px Segoe UI';
-            ctx.fillStyle = '#ffcc00';
-            ctx.fillText(`Waktu: ${timeLeft}s`, canvas.width / 2, 55);
+            ctx.fillText(`Level ${currentLevel} | Waktu: ${timeLeft}s`, canvas.width / 2, 30);
             ctx.textAlign = 'left';
         }
 
         function gameLoop() {
-            if (isGameRunning) {
+            if (isRunning) {
                 update();
                 draw();
                 requestAnimationFrame(gameLoop);
@@ -432,46 +206,41 @@
         }
 
         function endLevel() {
-            isGameRunning = false;
+            isRunning = false;
             clearInterval(timerInterval);
             playSound('win');
 
-            const overMenu = document.getElementById('game-over-menu');
-            const overTitle = document.getElementById('over-title');
-            const overMsg = document.getElementById('over-msg');
+            const menu = document.getElementById('over-menu');
+            const title = document.getElementById('over-title');
+            const msg = document.getElementById('over-msg');
             const btnNext = document.getElementById('btn-next');
 
-            overMenu.classList.remove('hidden');
+            menu.classList.remove('hidden');
 
-            let winnerText = "";
-            if (p1.score > p2.score) {
-                winnerText = "Player 1 Menang!";
-            } else if (p2.score > p1.score) {
-                winnerText = gameMode === 'vs_ai' ? "Computer Menang!" : "Player 2 Menang!";
-            } else {
-                winnerText = "Hasil Seri!";
-            }
+            let winner = "Seri!";
+            if (p1.score > p2.score) winner = "Player 1 Menang!";
+            else if (p2.score > p1.score) winner = gameMode === 'vs_ai' ? "Komputer Menang!" : "Player 2 Menang!";
 
-            overTitle.innerText = `SELESAI - LEVEL ${currentLevel}`;
-            overMsg.innerHTML = `${winnerText}<br>Skor Akhir: ${p1.score} - ${p2.score}`;
+            title.innerText = `LEVEL ${currentLevel} SELESAI`;
+            msg.innerHTML = `${winner}<br>Skor: ${p1.score} vs ${p2.score}`;
 
             if (currentLevel < 5) {
                 btnNext.classList.remove('hidden');
             } else {
                 btnNext.classList.add('hidden');
-                overTitle.innerText = "PERMAINAN SELESAI!";
-                overMsg.innerHTML += "<br><b>Selamat! Anda telah menyelesaikan semua level.</b>";
+                title.innerText = "SELAMAT!";
+                msg.innerHTML += "<br>Kamu telah menamatkan semua level!";
             }
         }
 
         function nextLevel() {
             currentLevel++;
-            document.getElementById('game-over-menu').classList.add('hidden');
+            document.getElementById('over-menu').classList.add('hidden');
             initLevel();
         }
 
         function restartGame() {
-            document.getElementById('game-over-menu').classList.add('hidden');
+            document.getElementById('over-menu').classList.add('hidden');
             startGame(gameMode);
         }
     </script>
